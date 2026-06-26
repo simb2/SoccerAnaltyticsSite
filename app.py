@@ -199,6 +199,55 @@ section[data-testid="stSidebar"] p {
 div[data-testid="column"] {
     padding: 0 0.35rem;
 }
+
+/* ── About section ── */
+.about-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1.4rem 1.6rem;
+    margin-bottom: 1rem;
+}
+.about-card h3 {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0 0 0.75rem 0;
+}
+.about-card p {
+    font-size: 0.9rem;
+    color: #334155;
+    line-height: 1.65;
+    margin: 0 0 0.5rem 0;
+}
+.about-card p:last-child { margin-bottom: 0; }
+.about-card a {
+    color: #2563eb;
+    text-decoration: none;
+}
+.about-card a:hover { text-decoration: underline; }
+.tool-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 0.5rem;
+}
+.tool-chip {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 3px 12px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #334155;
+}
+.tool-chip.highlight {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -338,7 +387,7 @@ st.markdown(f"""
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
 
-tab_teams, tab_players = st.tabs(["Teams", "Players"])
+tab_teams, tab_players, tab_about = st.tabs(["Teams", "Players", "About"])
 
 
 # ── Teams tab ─────────────────────────────────────────────────────────────────
@@ -409,3 +458,75 @@ with tab_players:
 
         cards = [player_card(p) for p in players]
         render_grid(cards, cols=3)
+
+
+# ── About tab ─────────────────────────────────────────────────────────────────
+
+with tab_about:
+    col_left, col_right = st.columns([3, 2], gap="large")
+
+    with col_left:
+        st.markdown("""
+        <div class="about-card">
+          <h3>What this shows</h3>
+          <p>
+            This dashboard explores player and team performance across professional
+            soccer competitions. For each competition and season you can browse the
+            top 100 players and every team, ranked by goals, shots, passes, and
+            shot-conversion rate.
+          </p>
+          <p>
+            Every stat card shows a <strong>percentile bar</strong> — the colored
+            bar tells you where that player or team sits relative to everyone else
+            in the same competition and season (100th percentile = best in the
+            competition).
+          </p>
+        </div>
+
+        <div class="about-card">
+          <h3>Data source</h3>
+          <p>
+            All data comes from the
+            <a href="https://github.com/statsbomb/open-data" target="_blank">StatsBomb Open Data</a>
+            repository — a free, publicly available dataset of professional match
+            event data released by StatsBomb for research and education.
+          </p>
+          <p>
+            The dataset covers dozens of competitions and seasons, with millions of
+            individual match events (passes, shots, goals, etc.) tracked to the
+            second and pitch coordinate.
+          </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_right:
+        st.markdown("""
+        <div class="about-card">
+          <h3>Tools &amp; stack</h3>
+          <div class="tool-list">
+            <span class="tool-chip highlight">PostgreSQL</span>
+            <span class="tool-chip highlight">SQL</span>
+            <span class="tool-chip">Python</span>
+            <span class="tool-chip">Streamlit</span>
+            <span class="tool-chip">Neon (cloud DB)</span>
+          </div>
+        </div>
+
+        <div class="about-card">
+          <h3>How SQL powers the analytics</h3>
+          <p>
+            The raw StatsBomb events are stored in a PostgreSQL table with millions
+            of rows. All aggregations are pre-computed as
+            <strong>materialized views</strong> so the dashboard queries are fast.
+          </p>
+          <p>
+            Key SQL techniques used:
+          </p>
+          <ul style="font-size:0.875rem;color:#334155;line-height:1.8;padding-left:1.2rem;margin:0">
+            <li><strong>CTEs</strong> to stage aggregations in readable layers</li>
+            <li><strong>Filtered aggregates</strong> (<code>COUNT(*) FILTER (WHERE …)</code>) to pivot event types into columns in a single pass</li>
+            <li><strong>Window functions</strong> (<code>PERCENT_RANK()</code>, <code>ROW_NUMBER()</code>) to compute percentile ranks and leaderboard position per competition</li>
+            <li><strong>Materialized views</strong> to cache the results so live queries are instant</li>
+          </ul>
+        </div>
+        """, unsafe_allow_html=True)
