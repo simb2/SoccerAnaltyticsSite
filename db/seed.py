@@ -3,6 +3,10 @@ import json
 import requests
 import psycopg2
 import psycopg2.extras
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env.local"))
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 BASE_URL = "https://raw.githubusercontent.com/statsbomb/open-data/master/data"
 
@@ -17,7 +21,9 @@ def extract_xy(location):
     return None, None
 
 def seed():
-    conn = psycopg2.connect(dbname="soccer", user=os.environ["USER"])
+    _user = os.environ.get("USER", "simran")
+    database_url = os.getenv("DATABASE_URL", f"postgresql://{_user}@/soccer?host=/var/run/postgresql")
+    conn = psycopg2.connect(database_url)
     cur = conn.cursor()
 
     cur.execute("TRUNCATE events, players, matches, competitions RESTART IDENTITY CASCADE")
@@ -32,12 +38,27 @@ def seed():
     conn.commit()
     print(f"Loaded {len(comps)} competitions")
 
+    # Curated subset that fits in Neon free tier (512 MB).
+    # (competition_id, season_id): FIFA World Cup 2018/2022, African Cup 2023,
+    # Bundesliga 2023/24, La Liga 2020/21, Copa America 2024, NWSL 2018.
+    ALLOWED = {
+        (43, 3),   # FIFA World Cup 2018
+        (43, 106), # FIFA World Cup 2022
+        (6, 42),   # African Cup of Nations 2023
+        (9, 281),  # 1. Bundesliga 2023/2024
+        (11, 90),  # La Liga 2020/2021
+        (223, 282),# Copa America 2024
+        (49, 3),   # NWSL 2018
+    }
+
     # --- Matches + Events ---
     seen_players = set()
     total_matches = 0
     total_events = 0
 
     for comp in comps:
+        if (comp["competition_id"], comp["season_id"]) not in ALLOWED:
+            continue
         cid = comp["competition_id"]
         sid = comp["season_id"]
 
